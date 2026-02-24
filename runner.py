@@ -4,6 +4,7 @@ import argparse
 from typing import Any, Callable, Dict, List, Optional
 from core.metrics import run_with_metrics
 from core.search import SearchResult
+from pathlib import Path
 
 
 def benchmark_solver(
@@ -59,41 +60,83 @@ def print_rows(rows: List[Dict[str, Any]]) -> None:
 
 
 def main() -> None:
+
+    # ----------------------------------------------------------------------------
+    # Argument parsing
+    # ----------------------------------------------------------------------------
+
     parser = argparse.ArgumentParser(
         description="Run logic puzzle solvers (Sudoku or Futoshiki) with various algorithms."
     )
     
-    parser.add_argument(
-        "game",
-        type=str,
-        choices=["sudoku", "futoshiki"],
-        help="Choose which game to solve: 'sudoku' or 'futoshiki'"
+    # Sudoku or Futoshiki
+    puzzle_group = parser.add_mutually_exclusive_group(required=True)
+    puzzle_group.add_argument(
+        "--sudoku",
+        action="store_true",
+        help="Solve a Sudoku puzzle. Either this or --futoshiki must be specified."
+    )
+    puzzle_group.add_argument(
+        "--futoshiki",
+        action="store_true",
+        help="Solve a Futoshiki puzzle. Either this or --sudoku must be specified."
     )
     
+    # Random input or file input
+    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group.add_argument(
+        "--count",
+        type=int,
+        help="Number of randomly generated puzzles to solve. Either this or --input-path must be specified, not both."
+    )
+    input_group.add_argument(
+        "--input-path",
+        type=Path,
+        help="Path to a text file containing the input puzzle. Either this or --count must be specified, not both."
+    )
+    
+    # Display step-by-step or not
     parser.add_argument(
         "--step-by-step",
         action="store_true",
         help="Show the solving process step-by-step"
     )
     
-    parser.add_argument(
-        "--num-puzzles",
-        type=int,
-        default=1,
-        help="Number of randomly generated puzzles to solve (default: 1)"
-    )
-    
     args = parser.parse_args()
     
-    print(f"Game: {args.game}")
-    print(f"Step-by-step mode: {args.step_by_step}")
-    print(f"Number of puzzles: {args.num_puzzles}")
-    print()
+    #----------------------------------------------------------------------------
+    # Print configuration
+    #----------------------------------------------------------------------------
+
+    print(); print("-" * 40)
+
+    if args.sudoku:
+        print("Puzzle type       : Sudoku")
+    elif args.futoshiki:
+        print("Puzzle type       : Futoshiki")
+
+    if args.count is not None:
+        print(f"Number of puzzles : {args.count}")
+    if args.input_path is not None:
+        print(f"Input path        : {args.input_path}")
+
+    print(f"Step-by-step mode : {args.step_by_step}")
+
+    print("-" * 40); print()
+
+    #---------------------------------------------------------------------------
+    # Sudoku
+    #---------------------------------------------------------------------------
     
-    if args.game == "sudoku":
-        print("Put sudoku solver function here")
-    elif args.game == "futoshiki":
-        print("Put sudoku solver function here")
+    if args.sudoku:
+        print("TODO: Call Sudoku solver module")
+        
+    #---------------------------------------------------------------------------
+    # Futoshiki
+    #---------------------------------------------------------------------------
+    
+    elif args.futoshiki:
+        print("TODO: Call Futoshiki solver module")
 
 
 if __name__ == "__main__":
