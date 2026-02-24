@@ -93,7 +93,12 @@ def main() -> None:
     #---------------------------------------------------------------------------
     
     if args.sudoku:
-        print("TODO: Call Sudoku solver module")
+        sudoku_runner.run(
+            input_path   = args.input_path,
+            count        = args.count or 1,
+            step_by_step = args.step_by_step,
+            algorithms   = ["dfs", "dfs_with_visited", "astar", "astar_mrv"]
+        )
 
     #---------------------------------------------------------------------------
     # Futoshiki
