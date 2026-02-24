@@ -6,7 +6,7 @@ from pathlib import Path
 from core.io import load_sudoku
 from core.benchmark import benchmark_solver, print_rows
 from sudoku.sudoku_helpers import board_to_str
-from sudoku.sudoku_generator import create_puzzle
+from sudoku.sudoku_generator import generate_sudoku
 from sudoku.sudoku_solvers import (
     solve_astar_mrv,
     solve_astar,
@@ -58,7 +58,7 @@ def run(
         boards.append((str(input_path), flat))
     else:
         for i in range(count):
-            grid = create_puzzle(blanks=40)
+            grid, _ = generate_sudoku()
             flat = tuple(cell for row in grid for cell in row)
             boards.append((f"random_{i + 1}", flat))
 
