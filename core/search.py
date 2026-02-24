@@ -56,6 +56,7 @@ class SearchResult(Generic[S, A]):
     actions: List[A]
     path_cost: float
     stats: SearchStats
+    states: Optional[List[S]] = None  # Optional: sequence of states from initial to goal (for step-by-step display)
 
 
 def _reconstruct_actions_from_node(node: Node[S, A]) -> List[A]:
@@ -67,6 +68,23 @@ def _reconstruct_actions_from_node(node: Node[S, A]) -> List[A]:
         cur = cur.parent
     actions.reverse()
     return actions
+
+
+def _reconstruct_path_from_node(node: Node[S, A]) -> Tuple[List[A], List[S]]:
+    """Reconstruct both actions and states from a node back to root."""
+    actions: List[A] = []
+    states: List[S] = []
+    cur: Optional[Node[S, A]] = node
+    
+    while cur is not None:
+        states.append(cur.state)
+        if cur.parent is not None and cur.action is not None:
+            actions.append(cur.action)
+        cur = cur.parent
+    
+    actions.reverse()
+    states.reverse()
+    return actions, states
 
 
 def _reconstruct_actions_from_parents(
@@ -82,6 +100,28 @@ def _reconstruct_actions_from_parents(
         cur = prev
     actions.reverse()
     return actions
+
+
+def _reconstruct_path_from_parents(
+    parents: Dict[S, Tuple[S, A]],
+    start: S,
+    goal: S,
+) -> Tuple[List[A], List[S]]:
+    """Reconstruct both actions and states from parents dictionary."""
+    actions: List[A] = []
+    states: List[S] = []
+    cur = goal
+    
+    while cur != start:
+        states.append(cur)
+        prev, act = parents[cur]
+        actions.append(act)
+        cur = prev
+    
+    states.append(start)
+    actions.reverse()
+    states.reverse()
+    return actions, states
 
 def dfs(
     problem: SearchProblem[S, A],
@@ -99,6 +139,7 @@ def dfs(
             actions=[],
             path_cost=0.0,
             stats=SearchStats(nodes_expanded=0, nodes_generated=1, max_frontier_size=1),
+            states=[start.state],
         )
 
     stack: List[Node[S, A]] = [start]
@@ -143,12 +184,14 @@ def dfs(
                     visited.add(child.state)
 
                 if problem.is_goal(child.state):
+                    actions, states = _reconstruct_path_from_node(child)
                     return SearchResult(
                         status="solved",
                         goal_state=child.state,
-                        actions=_reconstruct_actions_from_node(child),
+                        actions=actions,
                         path_cost=child.path_cost,
                         stats=SearchStats(nodes_expanded, nodes_generated, max_frontier),
+                        states=states,
                     )
                 stack.append(child)
 
@@ -193,6 +236,7 @@ def astar(
             actions=[],
             path_cost=0.0,
             stats=SearchStats(nodes_expanded=0, nodes_generated=1, max_frontier_size=1),
+            states=[start],
         )
 
     parents: Dict[S, Tuple[S, A]] = {}
@@ -225,13 +269,14 @@ def astar(
             continue
 
         if problem.is_goal(state):
-            actions = _reconstruct_actions_from_parents(parents, start, state)
+            actions, states = _reconstruct_path_from_parents(parents, start, state)
             return SearchResult(
                 status="solved",
                 goal_state=state,
                 actions=actions,
                 path_cost=g_cur,
                 stats=SearchStats(nodes_expanded, nodes_generated, max_frontier),
+                states=states,
             )
 
         closed.add(state)

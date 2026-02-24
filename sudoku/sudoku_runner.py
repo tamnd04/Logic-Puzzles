@@ -2,6 +2,7 @@
 Sudoku runner module - called from the main runner.py with parsed CLI args.
 """
 
+from pathlib import Path
 from core.io import load_sudoku
 from core.benchmark import benchmark_solver, print_rows
 from sudoku.sudoku_helpers import board_to_str
@@ -63,13 +64,22 @@ def run(
 
     # Run each solver on each puzzle and collect benchmark rows
     rows: list[dict] = []
+    
+    # Track if we should write step-by-step output files
+    write_step_by_step_files = step_by_step
+    first_puzzle_processed = False
 
-    for puzzle, state in boards:
+    for puzzle_idx, (puzzle, state) in enumerate(boards):
         print("\n" + "-" * 30)
         print(f"Input: {puzzle}")
         print("-" * 30)
         print(board_to_str(state))
         print()
+        
+        # Determine if we should write files for this puzzle
+        should_write_files = write_step_by_step_files and (
+            input_path is not None or puzzle_idx == 0
+        )
 
         for algorithm, solver_function in solvers:
             row = benchmark_solver(
@@ -81,29 +91,100 @@ def run(
             )
             rows.append(row)
 
-            # if step_by_step:
-            if False:
+            if step_by_step:
                 result = solver_function(state)
-                print(f"\n  [{algorithm}] Solution:")
-                if result.actions:
-                    lst = list(state)
-                    for idx, digit in result.actions:
-                        lst[idx] = digit
-                    print(board_to_str(tuple(lst)))
+                print(f"\n  [{algorithm}] Step-by-step solution:")
+                if result.states:
+                    # Display step-by-step in console
+                    for i, board_state in enumerate(result.states):
+                        print(f"\n    Step {i}:")
+                        print(board_to_str(board_state))
+                    print(f"\n  Total steps: {len(result.states)}")
+                    
+                    # Write to file if needed
+                    if should_write_files:
+                        results_dir = Path("results")
+                        results_dir.mkdir(exist_ok=True)
+                        
+                        # Create filename: game_algorithm_steps.txt
+                        output_filename = results_dir / f"sudoku_{algorithm}_steps.txt"
+                        
+                        with open(output_filename, 'w') as f:
+                            f.write(f"Puzzle: {puzzle}\n")
+                            f.write(f"Algorithm: {algorithm}\n")
+                            f.write(f"Status: {result.status}\n")
+                            f.write(f"Total steps: {len(result.states)}\n")
+                            f.write(f"Nodes expanded: {row['nodes_expanded']}\n")
+                            f.write(f"Nodes generated: {row['nodes_generated']}\n")
+                            f.write(f"Max frontier: {row['max_frontier']}\n")
+                            f.write(f"Runtime: {row['runtime_sec_avg']:.4f}s\n")
+                            f.write(f"Memory: {row['peak_mem_kb_avg']:.2f}KB\n")
+                            f.write("\n" + "=" * 50 + "\n")
+                            f.write("Step-by-step solution:\n")
+                            f.write("=" * 50 + "\n\n")
+                            
+                            for i, board_state in enumerate(result.states):
+                                f.write(f"Step {i}:\n")
+                                f.write(board_to_str(board_state))
+                                f.write("\n\n")
+                        
+                        print(f"  Output written to: {output_filename}")
+                else:
+                    print("  (Step-by-step tracking not available)")
             else:
                 print(
                     f"  [{algorithm}]"
                     f"{'':<{20 - len(algorithm)}}"
                     f"status={row['status']:<10} "
                     f"nodes_expanded={row['nodes_expanded']:<8} "
-                    f"runtime={row['runtime_sec_avg']:.4f}s"
+                    f"runtime={row['runtime_sec_avg']:.4f}s     "
+                    f"memory={row['peak_mem_kb_avg']:.2f}KB"
                 )
 
-    # Print summary table
+    # Aggregate results by algorithm across all puzzles
     if rows:
+        # Group rows by algorithm
+        algo_data = {}
+        for row in rows:
+            algo = row['algorithm']
+            if algo not in algo_data:
+                algo_data[algo] = {
+                    'nodes_expanded': [],
+                    'nodes_generated': [],
+                    'max_frontier': [],
+                    'runtime_sec_avg': [],
+                    'peak_mem_kb_avg': [],
+                    'actions_len': [],
+                    'status': row['status']
+                }
+            algo_data[algo]['nodes_expanded'].append(row['nodes_expanded'])
+            algo_data[algo]['nodes_generated'].append(row['nodes_generated'])
+            algo_data[algo]['max_frontier'].append(row['max_frontier'])
+            algo_data[algo]['runtime_sec_avg'].append(row['runtime_sec_avg'])
+            algo_data[algo]['peak_mem_kb_avg'].append(row['peak_mem_kb_avg'])
+            algo_data[algo]['actions_len'].append(row['actions_len'])
+        
+        # Create aggregated rows
+        aggregated_rows = []
+        for algo, data in algo_data.items():
+            aggregated_rows.append({
+                'algorithm': algo,
+                'status': data['status'],
+                'actions_len': sum(data['actions_len']) / len(data['actions_len']),
+                'nodes_expanded': sum(data['nodes_expanded']) / len(data['nodes_expanded']),
+                'nodes_generated': sum(data['nodes_generated']) / len(data['nodes_generated']),
+                'max_frontier': max(data['max_frontier']),
+                'runtime_sec_avg': sum(data['runtime_sec_avg']) / len(data['runtime_sec_avg']),
+                'runtime_sec_min': min(data['runtime_sec_avg']),
+                'runtime_sec_max': max(data['runtime_sec_avg']),
+                'peak_mem_kb_avg': sum(data['peak_mem_kb_avg']) / len(data['peak_mem_kb_avg']),
+                'peak_mem_kb_min': min(data['peak_mem_kb_avg']),
+                'peak_mem_kb_max': max(data['peak_mem_kb_avg']),
+            })
+
         print("\n" + "=" * 40)
         print("Benchmark Summary")
         print("=" * 40)
-        print_rows(rows)
+        print_rows(aggregated_rows)
 
     return rows

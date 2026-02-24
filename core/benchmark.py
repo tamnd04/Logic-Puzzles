@@ -5,6 +5,7 @@ Functions for benchmarking solvers and printing results in a tabular format.
 from __future__ import annotations  
 from typing import Any, Callable, Dict, List, Optional
 from core.metrics import run_with_metrics
+from core.search import SearchResult
 
 def benchmark_solver(
     *,
@@ -28,7 +29,6 @@ def benchmark_solver(
         "puzzle": puzzle_name,
         "algorithm": algorithm_name,
         "status": last.status,
-        "path_cost": last.path_cost,
         "actions_len": len(last.actions),
         "nodes_expanded": last.stats.nodes_expanded,
         "nodes_generated": last.stats.nodes_generated,
