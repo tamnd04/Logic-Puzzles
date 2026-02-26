@@ -3,13 +3,17 @@ Main entry point for running logic puzzle solvers (Sudoku or Futoshiki) with var
 
 Usage examples:
     # Solve a Sudoku puzzle from a file, showing step-by-step process
-    python runner.py --sudoku --input-path sudoku/sudoku1.txt --step-by-step
+    python runner.py --sudoku --input-path sudoku/sudoku_input.txt --step-by-step
 
     # Solve 5 random Sudoku puzzles without step-by-step
     python runner.py --sudoku --count 5
 
+    # Solve 5 random Futoshiki puzzles without step-by-step
+    python runner.py --futoshiki --count 5
+
+
     # Solve a Futoshiki puzzle from a file, showing step-by-step process
-    python runner.py --futoshiki --input-path futoshiki/futoshiki1.txt --step-by-step
+    python runner.py --futoshiki --input-path futoshiki/futoshiki_input.txt --step-by-step
 
     # More options:
     python runner.py --help
@@ -21,7 +25,7 @@ import argparse
 from core.benchmark import benchmark_solver, print_rows
 from pathlib import Path
 import sudoku.sudoku_runner as sudoku_runner
-
+import futoshiki.futoshiki_runner as futoshiki_runner
 
 def main() -> None:
 
@@ -105,7 +109,14 @@ def main() -> None:
     #---------------------------------------------------------------------------
     
     elif args.futoshiki:
-        print("TODO: Call Futoshiki solver module")
+        futoshiki_runner.run(
+            input_path   = args.input_path,
+            count        = args.count or 1,
+            size         = 5,
+            step_by_step = args.step_by_step,
+            algorithms   = ["dfs", "dfs_with_visited", "astar", "astar_mrv"]
+        )
+
 
 
 if __name__ == "__main__":
