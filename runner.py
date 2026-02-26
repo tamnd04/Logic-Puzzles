@@ -8,9 +8,8 @@ Usage examples:
     # Solve 5 random Sudoku puzzles without step-by-step
     python runner.py --sudoku --count 5
 
-    # Solve 5 random Futoshiki puzzles without step-by-step
+    # Solve 5 random Futoshiki puzzles without step-by-step, can edit size in this file
     python runner.py --futoshiki --count 5
-
 
     # Solve a Futoshiki puzzle from a file, showing step-by-step process
     python runner.py --futoshiki --input-path futoshiki/futoshiki_input.txt --step-by-step
